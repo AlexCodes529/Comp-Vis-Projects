@@ -1,0 +1,85 @@
+from selenium import webdriver
+from bs4 import BeautifulSoup
+from urllib.request import urlopen, Request
+import string
+import os
+
+
+
+#More diverse results for each letter 
+ASL_LINKS1 = [f"https://www.google.com/search?q=asl+{letter}&tbm=isch&ved=2ahUKEwjG5eTToL-EAxXzdaQEHT9ACCQQ2-cCegQIABAA&oq=asl+a&gs_lp=EgNpbWciBWFzbCBhMgoQABiABBiKBRhDMgUQABiABDIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQ0jdDFCcBVioC3AAeACQAQCYAacBoAHEAqoBAzAuMrgBA8gBAPgBAYoCC2d3cy13aXotaW1niAYB&sclient=img&ei=M2fXZYaAHfPrkdUPv4ChoAI&bih=672&biw=1381&rlz=1C1UEAD_deDE1010DE1010&hl=en"
+            for letter in string.ascii_lowercase]
+
+ASL_LINKS2 = [f"https://www.google.com/search?sca_esv=24d434d1ee6f8031&sca_upv=1&rlz=1C1UEAD_deDE1010DE1010&q=asl+letter+{letter}&tbm=isch&source=lnms&sa=X&ved=2ahUKEwjQjJ2Rv8KEAxWfSvEDHQVtBXEQ0pQJegQIChAB&biw=1396&bih=672&dpr=1.38"
+              for letter in string.ascii_lowercase]
+
+
+def ImageWebscraper(numImages=10, bufferTime=3):
+    #Retrieves links of images from URL page
+    letterImages = {}
+    for letter in string.ascii_lowercase:
+        
+        links = []
+
+
+        #Making a directory for each letter
+        dir = rf"C:\Users\Alex_\Desktop\{letter.upper()}"
+        try:
+            os.makedirs(dir)
+        except FileExistsError:
+            os.rmdir(dir)
+            os.mkdir(dir)
+
+
+        html1 = urlopen(Request(ASL_LINKS1[string.ascii_letters.index(letter)], 
+                               headers={'User-Agent': 'Google Chrome'}))
+        html2 = urlopen(Request(ASL_LINKS2[string.ascii_letters.index(letter)], 
+                               headers={'User-Agent': 'Google Chrome'}))
+
+
+
+        soup1 = BeautifulSoup(html1.read(),"html.parser")
+        soup2 = BeautifulSoup(html2.read(),"html.parser")
+        
+
+        #Finding all results. Only finds the first 21 for some reason?
+        results1 = soup1.find_all("img")
+        results2 = soup2.find_all("img")
+
+
+        #Count should be below 42 for some reason?????
+        count = 0
+
+
+        for result in results1:
+            if count < numImages:
+                links.append(str(result))
+                count += 1
+
+        for result in results2:
+            if count < numImages:
+                links.append(str(result))
+                count += 1
+        letterImages[letter] = links
+        
+
+        for link in letterImages[letter][1:]:
+
+            #driver = webdriver.Chrome()
+
+            filename = dir+f'\{letterImages[letter].index(link)}.png'
+
+            #Retrieving link from soup.find_all object
+            startIndex = link.index("h")
+            endIndex = link.index(";s")
+
+            #Downloading images from the webdriver
+            print(filename, link[startIndex:endIndex])
+            options = webdriver.ChromeOptions()
+            options.add_argument('--ignore-certificate-errors')
+            options.add_argument("--test-type")
+            driver = webdriver.Chrome(options)
+            driver.get(link[startIndex:endIndex])
+            driver.save_screenshot(filename)
+
+        
