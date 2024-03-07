@@ -70,16 +70,18 @@ def ImageWebscraper(numImages=10, bufferTime=3):
             filename = dir+f'\{letterImages[letter].index(link)}.png'
 
             #Retrieving link from soup.find_all object
-            startIndex = link.index("h")
-            endIndex = link.index(";s")
+            try:
+                        startIndex = link.index("h")
+                        endIndex = link.index(";s")
 
             #Downloading images from the webdriver
-            print(filename, link[startIndex:endIndex])
-            options = webdriver.ChromeOptions()
-            options.add_argument('--ignore-certificate-errors')
-            options.add_argument("--test-type")
-            driver = webdriver.Chrome(options)
-            driver.get(link[startIndex:endIndex])
-            driver.save_screenshot(filename)
-
+                        print(filename, link[startIndex:endIndex])
+                        options = webdriver.ChromeOptions()
+                        options.add_argument('--ignore-certificate-errors')
+                        options.add_argument("--test-type")
+                        driver = webdriver.Chrome(options)
+                        driver.get(link[startIndex:endIndex])
+                        driver.save_screenshot(filename)
+            except:
+                        continue
         
