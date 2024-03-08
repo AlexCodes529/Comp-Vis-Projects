@@ -1,0 +1,27 @@
+import string
+from PIL import Image
+
+
+width = int(input("Width:\t"))
+height = int(input("Heigh:\t"))
+numFiles = int(input("Number of files:\t"))
+
+
+def resize(resizeWidth, resizeHeight, imagePath):
+    #add specific file path format
+    image = Image.open(imagePath)
+    image = image.resize((int(resizeWidth), int(resizeHeight)))
+    image.save(imagePath, "PNG")
+
+
+def greyScale(imagePath):
+    image = Image.open(imagePath)
+    image.convert('L')
+    image.save(imagePath, "PNG")
+
+
+for letter in string.ascii_lowercase:
+    for i in range(1, numFiles+1):
+        imagePath = fr"C:\Users\Alex_\Desktop\ASL Project\{letter.upper()}\{i}.jpg"
+        resize(width, height, imagePath)
+        greyScale(imagePath)
