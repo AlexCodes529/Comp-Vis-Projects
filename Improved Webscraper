@@ -1,0 +1,71 @@
+from selenium import webdriver
+from string import ascii_lowercase
+from selenium.webdriver.common.by import By
+import os
+import io
+import requests
+from PIL import Image
+import time
+
+filePaths = [rf"C:\Users\Alex_\Desktop\ASL Project\{letter}" for letter in ascii_lowercase]
+URLS = [f"https://www.google.com/search?q=asl+{letter}&tbm=isch&ved=2ahUKEwjG5eTToL-EAxXzdaQEHT9ACCQQ2-cCegQIABAA&oq=asl+a&gs_lp=EgNpbWciBWFzbCBhMgoQABiABBiKBRhDMgUQABiABDIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQzIKEAAYgAQYigUYQ0jdDFCcBVioC3AAeACQAQCYAacBoAHEAqoBAzAuMrgBA8gBAPgBAYoCC2d3cy13aXotaW1niAYB&sclient=img&ei=M2fXZYaAHfPrkdUPv4ChoAI&bih=672&biw=1381&rlz=1C1UEAD_deDE1010DE1010&hl=en"
+            for letter in ascii_lowercase]
+
+URL_Path_list = list(zip(URLS, filePaths))
+driver = webdriver.Chrome()
+
+def Download(directory, fileName, URL):
+        try:
+            os.makedirs(directory)
+        except FileExistsError:
+            os.rmdir(directory)
+            os.mkdir(directory)
+
+        try: 
+                image_content = requests.get(URL).content
+                image_file = io.BytesIO(image_content)
+                image = Image.open(image_file)
+                fullPath = directory+fileName
+                with open(fullPath, "wb") as handler:
+                        image.save(handler, "JPEG")
+        except:
+             print("FAILED--TRY AGAIN")
+
+        #Print("Image downloaded")
+
+
+def GetImage(image_count, loadTime, driver, URL):
+     def scroll(driver):
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(loadTime)  
+
+     driver.get(URL)
+
+     image_urls = []
+     skip = 0
+
+
+     while len(image_urls) < image_count:
+        scroll(driver)
+
+        image_thumbnails = driver.find_elements(By.CLASS_NAME, "Q4LuWd")
+
+        for image in image_thumbnails[len(image_urls)+skip:image_count]:
+                try:
+                        image.click()
+                        time.sleep(loadTime)
+                except:
+                        continue
+
+                images = driver.find_elements(By.CLASS_NAME, "Q4LuWd")
+                for image in images:
+                        if image.get_attribute('src') in image_urls:
+                              image_count += 1
+                              skip += 1
+                              break
+
+                        if image.get_attribute('src') and "http" in image.get_attribute('src') and image.get_attribute('src') not in image_urls:
+                                print(len(image_urls))
+                                image_urls.append(image.get_attribute('src'))
+        print(image_urls)
+
