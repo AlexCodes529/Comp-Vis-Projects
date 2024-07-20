@@ -1,0 +1,116 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+
+
+#Object detection from a stable camera
+objDetect = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
+
+
+class Object():
+    def __init__(self, coord, ct=None):
+        self.pos = coord
+        self.ct = [ct]
+        self.posList = [coord]
+    
+    def update(self, ct, coord):
+        (self.posList).append(coord)
+        (self.ct).append(ct)
+
+
+
+def findNearestNeighbour(point, contours):
+
+    nearest = contours[0]
+    x, y, w, h = cv2.boundingRect(nearest)
+    initCentralPoint = (int((2*x+w)/2), int((2*y+h)/2))
+    minDist = math.sqrt((point[0]-initCentralPoint[0])**2 + (point[1]-initCentralPoint[1])**2)
+
+    for ct in contours:
+        x, y, w, h = cv2.boundingRect(ct)
+        newCentralPoint = (int((2*x+w)/2), int((2*y+h)/2))
+        dist = math.sqrt((point[0]-newCentralPoint[0])**2 + (point[1]-newCentralPoint[1])**2)
+        
+
+        if dist < minDist:
+            minDist = dist
+            nearest = ct
+    
+    return nearest, newCentralPoint
+
+
+def findCenter(ct):
+    x, y, w, h = cv2.boundingRect(ct)
+    centralPoint = (int((2*x+w)/2), int((2*y+h)/2))
+
+    return centralPoint
+
+
+
+cap = cv2.VideoCapture(r"C:\Users\Alex_\Downloads\vecteezy_football-green-screen-2d-animation-4k-football-rotating-and_13802024.mov")
+initRet, initFrame = cap.read()
+initFrame = cv2.resize(initFrame, (600, 600))
+initROI = cv2.selectROI('ROI', initFrame)
+cv2.imshow('Initial frame', initFrame)
+cv2.destroyAllWindows()
+
+
+
+myObject = Object((0, 0))
+while True:
+    selectPoint = cv2.waitKey(1)
+    ret, frame = cap.read()
+    frame = cv2.resize(frame, (600, 600))
+    
+    mask = objDetect.apply(frame)
+    _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
+    contours, heir = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+
+    goodContours = []
+    for ct in contours:
+        ctArea = cv2.contourArea(ct)
+        if ctArea > 100:
+            goodContours.append(ct)
+            x, y, w, h = cv2.boundingRect(ct)
+            centralPoint = (int((2*x+w)/2), int((2*y+h)/2))
+
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 5)
+
+
+    newROI = frame[int(initROI[1]):int(initROI[1]+initROI[3]),  
+                int(initROI[0]):int(initROI[0]+initROI[2])] 
+    
+
+    if myObject.posList[-1] != (0, 0):
+        #center = findCenter(myObject.ct[-1])
+        try:
+            trackedObj, point = findNearestNeighbour(myObject.posList[-1], goodContours)
+        except:
+            pass
+        myObject.update(trackedObj, point)
+        cv2.circle(frame, myObject.posList[-1], 10, (0, 0, 255), -1)
+
+    if selectPoint == ord('s'):
+        objectROI = cv2.selectROI("Object to track", frame)
+        center = (int((objectROI[1]+objectROI[3])/2), int((objectROI[0]+objectROI[2])))
+        trackedObj, point = findNearestNeighbour(center, contours)
+        myObject.update(trackedObj, point)
+
+    elif selectPoint == ord('q'):
+        break
+
+
+    if len(myObject.posList) > 4:
+        for i in range(1, len(myObject.posList)-2):
+            cv2.line(frame, myObject.posList[i], myObject.posList[i+1], (0, 0, 255), 10)
+    cv2.imshow('frame', frame)
+    cv2.imshow('mask', mask)
+    cv2.imshow('ROI', newROI)
+
+
+
+
+cap.release()
+cv2.destroyAllWindows()
